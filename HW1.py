@@ -68,7 +68,7 @@ def get_minkowsky_sum(original_shape: Polygon, r: float) -> Polygon:
 
 
 def shrink_line(p,q):
-    c = 0.05
+    c = 0.005
     return [(p[0]*(1-c) + c*q[0],p[1]*(1-c) + c*q[1]),(q[0]*(1-c) + c*p[0], q[1]*(1-c) + c*p[1])]
 # TODO
 def get_visibility_graph(obstacles: List[Polygon], source=None, dest=None) -> List[LineString]:
@@ -82,15 +82,15 @@ def get_visibility_graph(obstacles: List[Polygon], source=None, dest=None) -> Li
     visibility_edges = []
     # nodes = [obstacle.centroid for obstacle in obstacles]
     nodes = [vertex for obstacle in obstacles for vertex in obstacle.exterior.coords[:-1]]
-    for p in nodes:
-        for q in nodes:
-            if p == q:
-                continue
-            line = LineString([p, q])
-            shrunk_line = LineString(shrink_line(p,q))
-            
-            if(not any(shrunk_line.intersects(obstacle) for obstacle in obstacles)):
-                visibility_edges.append(line)
+    for i in range(len(obstacles)-1):
+        for j in range(i+1, len(obstacles)):
+            for p in [vertex for vertex in obstacles[i].exterior.coords[:-1]]:
+                for q in [vertex for vertex in obstacles[j].exterior.coords[:-1]]:
+                    line = LineString([p, q])
+                    shrunk_line = LineString(shrink_line(p,q))
+                    
+                    if(not any(shrunk_line.intersects(obstacle) for obstacle in obstacles)):
+                        visibility_edges.append(line)
     return visibility_edges
 
 
