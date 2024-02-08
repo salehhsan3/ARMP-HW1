@@ -4,7 +4,26 @@ from typing import List, Tuple
 
 from Plotter import Plotter
 from shapely.geometry.polygon import Polygon, LineString
+import math
 
+def angle_with_x_axis(point1, point2):
+    """
+    Calculate the angle between a line segment and the positive x-axis.
+    """
+    dx = point2[0] - point1[0]
+    dy = point2[1] - point1[1]
+
+    # Calculate the angle using arctan2
+    angle_radians = math.atan2(dy, dx)
+
+    # Ensure the angle is positive
+    if angle_radians < 0:
+        angle_radians += 2 * math.pi
+
+    return angle_radians
+
+def array_angle(array, i):
+    return angle_with_x_axis(array[i], array[(i+1)%(len(array))])
 
 # TODO
 def get_minkowsky_sum(original_shape: Polygon, r: float) -> Polygon:
@@ -14,8 +33,21 @@ def get_minkowsky_sum(original_shape: Polygon, r: float) -> Polygon:
     :param r: The radius of the rhombus
     :return: The polygon composed from the Minkowsky sums
     """
-    pass
+    robot_coords = [(0,-r), (r,0),(0,r),(-r,0)]         #P
+    obst_coords = original_shape.exterior.coords[:-1]   #Polygon repeats the last step
+    mink_sum = []
 
+    i, j = 0, 0
+    while i <= len(obst_coords) and j <= len(robot_coords): 
+        mink_sum.append(obst_coords[i] + robot_coords[j])
+        if array_angle(robot_coords,i) < array_angle(obst_coords,j): 
+            i += 1
+        elif array_angle(obst_coords,j) < array_angle(robot_coords,i):
+            j += 1
+        else:
+            i += 1
+            j += 1
+    return Polygon(mink_sum)
 
 # TODO
 def get_visibility_graph(obstacles: List[Polygon], source=None, dest=None) -> List[LineString]:
@@ -26,7 +58,7 @@ def get_visibility_graph(obstacles: List[Polygon], source=None, dest=None) -> Li
     :param dest: The destination of the query. None for part 1.
     :return: A list of LineStrings holding the edges of the visibility graph
     """
-    pass
+    return [(0,0),(1,1)]
 
 
 def is_valid_file(parser, arg):
