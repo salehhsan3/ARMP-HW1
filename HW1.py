@@ -66,6 +66,10 @@ def get_minkowsky_sum(original_shape: Polygon, r: float) -> Polygon:
             j += 1
     return Polygon(mink_sum)
 
+
+def shrink_line(p,q):
+    c = 0.05
+    return [(p[0]*(1-c) + c*q[0],p[1]*(1-c) + c*q[1]),(q[0]*(1-c) + c*p[0], q[1]*(1-c) + c*p[1])]
 # TODO
 def get_visibility_graph(obstacles: List[Polygon], source=None, dest=None) -> List[LineString]:
     """
@@ -83,25 +87,10 @@ def get_visibility_graph(obstacles: List[Polygon], source=None, dest=None) -> Li
             if p == q:
                 continue
             line = LineString([p, q])
-            intersection_points = []
-            intersection_lines = []
-            for obstacle in obstacles:
-                intersection = line.intersection(obstacle)
-                if intersection.is_empty:
-                    continue
-                elif intersection.geom_type == 'Point':
-                    intersection_points.append(intersection)
-                elif intersection.geom_type == 'MultiPoint':
-                    intersection_points.extend(intersection)
-                elif intersection.geom_type == 'LineString':
-                    intersection_lines.append(intersection)
-                else:
-                    print("Error, unhandled intersection type!")
-                    exit(0xdeadbeef)
-            if all(point not in intersection_points for point in [p, q]) and \
-               all(line not in intersection_lines for line in [line, line.reverse()]):
+            shrunk_line = LineString(shrink_line(p,q))
+            
+            if(not any(shrunk_line.intersects(obstacle) for obstacle in obstacles)):
                 visibility_edges.append(line)
-    
     return visibility_edges
 
 
