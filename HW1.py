@@ -42,8 +42,8 @@ def get_minkowsky_sum(original_shape: Polygon, r: float) -> Polygon:
     mink_sum = []
 
     i, j = 0, 0
-    while i <= len(obst_coords) and j <= len(robot_coords): 
-        mink_sum.append(combine_points(obst_coords[i%len(obst_coords)], robot_coords[j%len(obst_coords)]))
+    while j <= len(obst_coords) and i <= len(robot_coords): 
+        mink_sum.append(combine_points(obst_coords[j%len(obst_coords)], robot_coords[i%len(robot_coords)]))
         if array_angle(robot_coords,i) < array_angle(obst_coords,j): 
             i += 1
         elif array_angle(obst_coords,j) < array_angle(robot_coords,i):
@@ -76,32 +76,32 @@ def get_points_and_dist(line):
     source = tuple(map(float, source.split(',')))
     return source, dist
 
-def my_main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("Robot", help="A file that holds the starting position of the robot, and the distance from the center of the robot to any of its vertices")
-    parser.add_argument("Obstacles", help="A file that contains the obstacles in the map")
-    parser.add_argument("Query", help="A file that contains the ending position for the robot.")
-    args = parser.parse_args()
-    obstacles = args.Obstacles
-    robot = args.Robot
-    query = args.Query
-    workspace_obstacles = []
-    with open(obstacles, 'r') as f:
-        for line in f.readlines():
-            ob_vertices = line.split(' ')
-            if ',' not in ob_vertices:
-                ob_vertices = ob_vertices[:-1]
-            points = [tuple(map(float, t.split(','))) for t in ob_vertices]
-            workspace_obstacles.append(Polygon(points))
-    with open(robot, 'r') as f:
-        source, dist = get_points_and_dist(f.readline())
-    c_space_obstacles = [get_minkowsky_sum(p, dist) for p in workspace_obstacles]
-    plotter1 = Plotter()
-    plotter1.add_obstacles(workspace_obstacles)
-    plotter1.add_c_space_obstacles(c_space_obstacles)
-    plotter1.add_robot(source, dist)
+# def my_main():
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument("Robot", help="A file that holds the starting position of the robot, and the distance from the center of the robot to any of its vertices")
+#     parser.add_argument("Obstacles", help="A file that contains the obstacles in the map")
+#     parser.add_argument("Query", help="A file that contains the ending position for the robot.")
+#     args = parser.parse_args()
+#     obstacles = args.Obstacles
+#     robot = args.Robot
+#     query = args.Query
+#     workspace_obstacles = []
+#     with open(obstacles, 'r') as f:
+#         for line in f.readlines():
+#             ob_vertices = line.split(' ')
+#             if ',' not in ob_vertices:
+#                 ob_vertices = ob_vertices[:-1]
+#             points = [tuple(map(float, t.split(','))) for t in ob_vertices]
+#             workspace_obstacles.append(Polygon(points))
+#     with open(robot, 'r') as f:
+#         source, dist = get_points_and_dist(f.readline())
+#     c_space_obstacles = [get_minkowsky_sum(p, dist) for p in workspace_obstacles]
+#     plotter1 = Plotter()
+#     plotter1.add_obstacles(workspace_obstacles)
+#     plotter1.add_c_space_obstacles(c_space_obstacles)
+#     plotter1.add_robot(source, dist)
 
-    plotter1.show_graph()
+#     plotter1.show_graph()
 
 if __name__ == '__main__':
     # my_main()
