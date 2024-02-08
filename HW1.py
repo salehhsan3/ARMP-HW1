@@ -6,6 +6,8 @@ from Plotter import Plotter
 from shapely.geometry.polygon import Polygon, LineString
 import math
 
+CORRECT_OBSTACLES = True
+
 def combine_points(p1, p2):
     return (p1[0] + p2[0], p1[1] + p2[1])
     
@@ -29,6 +31,12 @@ def angle_with_x_axis(point1, point2):
 def array_angle(array, i):
     return angle_with_x_axis(array[i%len(array)], array[(i+1)%(len(array))])
 
+def rotate(L, n):
+    if len(L) != 0:
+        shift = n % len(L)
+        for i in range(shift):
+            L.append(L.pop(0))
+
 # TODO
 def get_minkowsky_sum(original_shape: Polygon, r: float) -> Polygon:
     """
@@ -37,9 +45,28 @@ def get_minkowsky_sum(original_shape: Polygon, r: float) -> Polygon:
     :param r: The radius of the rhombus
     :return: The polygon composed from the Minkowsky sums
     """
+    # assumptions:
+    #   we'll denote vertices of the robot - v_i. and vertices of the obstacle - w_j
+    #   1) v_1 and w_1 have the smallest y-coordinates in their respective lists
+    #   2) the vertices are arranged counter clock-wise.
     robot_coords = [(0,-r), (r,0),(0,r),(-r,0)]         #P
     obst_coords = original_shape.exterior.coords[:-1]   #Polygon repeats the last step
+    
     mink_sum = []
+    # Correct wall orientation
+    print(obst_coords)
+    if CORRECT_OBSTACLES:
+        print(obst_coords[0],min(obst_coords,key=lambda point: point[1]))
+        if obst_coords[0][1] > min(obst_coords,key=lambda point: point[1])[1]:
+            print("first point is not min, rotating by",obst_coords.index(min(obst_coords,key=lambda point: point[1])))
+            rotate(obst_coords, obst_coords.index(min(obst_coords,key=lambda point: point[1])))
+            print(obst_coords)
+        #doesn't catch all cases!
+        if len(obst_coords) > 2 and array_angle(obst_coords, 0) > array_angle(obst_coords, 1):
+            print("flipping order!")
+            rotate(obst_coords,1)
+            obst_coords = obst_coords[::-1]
+            print(obst_coords)
 
     i, j = 0, 0
     while j <= len(obst_coords) and i <= len(robot_coords): 
