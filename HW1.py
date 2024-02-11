@@ -1,10 +1,12 @@
 import argparse
 import os
 from typing import List, Tuple
-
+import heapq
 from Plotter import Plotter
-from shapely.geometry.polygon import Polygon, LineString
+from shapely.geometry.polygon import Polygon, LineString, Point
 import math
+from collections import defaultdict
+
 
 # 0,0 1,0 1,1 0,1 
 # 10,3 11,3 11,5 11,6 10,5 
@@ -66,33 +68,83 @@ def get_minkowsky_sum(original_shape: Polygon, r: float) -> Polygon:
             j += 1
     return Polygon(mink_sum)
 
-
-def shrink_line(p,q):
-    c = 0.005
-    return [(p[0]*(1-c) + c*q[0],p[1]*(1-c) + c*q[1]),(q[0]*(1-c) + c*p[0], q[1]*(1-c) + c*p[1])]
 # TODO
-def get_visibility_graph(obstacles: List[Polygon], source=None, dest=None) -> List[LineString]:
+def check_visibility(line, obstacles, edges):
+        count = 0
+        for obst in obstacles:
+            if (not line.touches(obst)) and (line.intersects(obst)):
+                count += 1 # the line intersects the obstacle, and passes througt it ( not touch an outside vertex)
+                break
+            else:
+                pass # the line either touches (an outside vertex) or doesn't intersect with the obstacle, check if it
+        if count == 0:
+            edges.append(line) # line doesn't intersect with obstacles
+        else:
+            pass # line intersects with at least one obstacle
+
+def get_visibility_graph(obstacles: List[Polygon], source=None, dest=None) -> List[LineString]: # O(n^3)
     """
     Get The visibility graph of a given map
     :param obstacles: A list of the obstacles in the map
     :param source: The starting position of the robot. None for part 1.
     :param dest: The destination of the query. None for part 1.
     :return: A list of LineStrings holding the edges of the visibility graph
-    """
+    """        
     visibility_edges = []
-    # nodes = [obstacle.centroid for obstacle in obstacles]
-    nodes = [vertex for obstacle in obstacles for vertex in obstacle.exterior.coords[:-1]]
-    for i in range(len(obstacles)-1):
-        for j in range(i+1, len(obstacles)):
-            for p in [vertex for vertex in obstacles[i].exterior.coords[:-1]]:
-                for q in [vertex for vertex in obstacles[j].exterior.coords[:-1]]:
-                    line = LineString([p, q])
-                    shrunk_line = LineString(shrink_line(p,q))
-                    
-                    if(not any(shrunk_line.intersects(obstacle) for obstacle in obstacles)):
-                        visibility_edges.append(line)
+    vertices = [vertex for obstacle in obstacles for vertex in obstacle.exterior.coords[:-1]]
+    if source is not None:
+        vertices.append(source)
+    if dest is not None:
+        vertices.append(dest)
+
+    for i in range(len(vertices)):
+        for j in range(i + 1, len(vertices)):
+            line = LineString([vertices[i], vertices[j]])
+            check_visibility(line, obstacles, visibility_edges) # finds if line intersects any obstacles.
     return visibility_edges
 
+#TODO: implement dijkstra's algorithm for shortest path, return the shortest path and its cost!
+def dijkstra_with_goal(graph, start, goal):
+    distances = {node: float('inf') for node in graph}
+    parents = {node: None for node in graph}
+    distances[start] = 0
+    priority_queue = [(0, start)] # (dst, vertex)
+    shortest_path, sp_cost = [], 0
+
+    while priority_queue: # (while heap is not empty)
+        current_distance, current_node = heapq.heappop(priority_queue) # pop vertex with minimal distance
+        if current_node == goal:
+            # it's guaranteed that there's no better path -- proof in Algorithms that when a node is processed we have the shortest path to it.
+            while current_node:
+                shortest_path.append(current_node)
+                current_node = parents[current_node]
+            shortest_path = shortest_path[::-1] # reverse the list
+            break # we get a reversed list!
+        if current_distance > distances[current_node]:
+            continue # we have a better path to this node!
+        for neighbor, weight in graph[current_node].items(): # check if we improve any of the neigbors' paths
+            distance = current_distance + weight
+            if distance < distances[neighbor]:
+                distances[neighbor] = distance
+                parents[neighbor] = current_node
+                heapq.heappush(priority_queue, (distance, neighbor) )
+    return shortest_path, distances[goal]
+
+def build_graph(line_strings: List[LineString]):
+    #description: the graph has a dictionary with all the vertices
+    # each vertex has a dictionary housing: (Neighbor, dist)
+    graph = defaultdict(dict)
+    for line in line_strings:
+        u, v = line.coords # each line has 2 coordinates that represent his beginning and end.
+        if u not in graph:
+            graph[u] = {}
+        if v not in graph:
+            graph[v] = {}
+        graph[u][v], graph[v][u] = line.length, line.length # adds a non directed edge with its cost!
+    return graph
+
+def build_graph_and_calculate_shortest_path(visibility_lines: List[LineString], start, goal ):
+    return dijkstra_with_goal(build_graph(visibility_lines), start, goal)
 
 def is_valid_file(parser, arg):
     if not os.path.exists(arg):
@@ -137,7 +189,6 @@ if __name__ == '__main__':
 
     plotter1.show_graph()
     # step 2:
-    print("get graph")
     lines = get_visibility_graph(c_space_obstacles)
     plotter2 = Plotter()
 
@@ -147,21 +198,20 @@ if __name__ == '__main__':
     plotter2.add_robot(source, dist)
 
     plotter2.show_graph()
-    print("done showing")
-    # # step 3:
-    # with open(query, 'r') as f:
-    #     dest = tuple(map(float, f.readline().split(',')))
+    # step 3:
+    with open(query, 'r') as f:
+        dest = tuple(map(float, f.readline().split(',')))
 
-    # lines = get_visibility_graph(c_space_obstacles, source, dest)
-    # #TODO: fill in the next line
-    # shortest_path, cost = None, None
+    lines = get_visibility_graph(c_space_obstacles, source, dest)
+    #TODO: fill in the next line
+    shortest_path, cost = build_graph_and_calculate_shortest_path(lines, source, dest)
 
-    # plotter3 = Plotter()
-    # plotter3.add_robot(source, dist)
-    # plotter3.add_obstacles(workspace_obstacles)
-    # plotter3.add_robot(dest, dist)
-    # plotter3.add_visibility_graph(lines)
-    # plotter3.add_shorterst_path(list(shortest_path))
+    plotter3 = Plotter()
+    plotter3.add_robot(source, dist)
+    plotter3.add_obstacles(workspace_obstacles)
+    plotter3.add_robot(dest, dist)
+    plotter3.add_visibility_graph(lines)
+    plotter3.add_shorterst_path(list(shortest_path))
 
 
-    # plotter3.show_graph()
+    plotter3.show_graph()
