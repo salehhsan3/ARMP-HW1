@@ -1,4 +1,4 @@
-from HW1 import rotate, array_angle
+from HW1 import array_angle
 import argparse
 import os
 from typing import List, Tuple
@@ -6,6 +6,13 @@ from typing import List, Tuple
 from Plotter import Plotter
 from shapely.geometry.polygon import Polygon, LineString
 import math
+
+
+def rotate(L, n):
+    if len(L) != 0:
+        shift = n % len(L)
+        for i in range(shift):
+            L.append(L.pop(0))
 
 def correct_polygon(original_shape: Polygon):
     
@@ -42,5 +49,5 @@ if __name__ == "__main__":
 
     with open('corrected-obstacles', "w") as f:
         for obst in corrected_obstacles:
-            f.write(' '.join(['{0:.2g}'.format(p[0])+","+'{0:.2g}'.format(p[1]) for p in obst.exterior.coords]) + "\n")
+            f.write(' '.join(['{0:.2g}'.format(p[0])+","+'{0:.2g}'.format(p[1]) for p in obst.exterior.coords[:-1]]) + " \n")
 
