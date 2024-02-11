@@ -28,7 +28,7 @@ def correct_polygon(original_shape: Polygon):
         obst_coords = obst_coords[::-1]
         print(obst_coords)
     
-    return original_shape
+    return Polygon(obst_coords)
 
 def get_obstacles():
     workspace_obstacles = []
