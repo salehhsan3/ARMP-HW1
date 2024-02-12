@@ -104,7 +104,7 @@ def get_visibility_graph(obstacles: List[Polygon], source=None, dest=None) -> Li
     return visibility_edges
 
 #TODO: implement dijkstra's algorithm for shortest path, return the shortest path and its cost!
-def dijkstra_with_goal(graph, start, goal):
+def dijkstra_with_goal(graph, start, goal): # O((E+V)log(V)) = O( (n^2)log(n) )
     distances = {node: float('inf') for node in graph}
     parents = {node: None for node in graph}
     distances[start] = 0
@@ -130,8 +130,8 @@ def dijkstra_with_goal(graph, start, goal):
                 heapq.heappush(priority_queue, (distance, neighbor) )
     return shortest_path, distances[goal]
 
-def build_graph(line_strings: List[LineString]):
-    #description: the graph has a dictionary with all the vertices
+def build_graph(line_strings: List[LineString]): # O(n^2) because the number of lines could reach: (n Choose 2)
+    # description: the graph has a dictionary with all the vertices
     # each vertex has a dictionary housing: (Neighbor, dist)
     graph = defaultdict(dict)
     for line in line_strings:
